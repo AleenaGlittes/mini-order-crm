@@ -11,7 +11,7 @@ import { CustomersView } from "@/components/dashboard/customers-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
 import { CreateOrderDialog } from "@/components/dashboard/create-order-dialog";
 import { Button } from "@/components/ui/button";
-import { fetchShopifyStatus, ShopifyStatusResponse } from "@/lib/api";
+import { fetchShopifyStatus, syncShopifyOrders, ShopifyStatusResponse } from "@/lib/api";
 import {
   Download,
   RotateCw,
@@ -53,7 +53,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadShopifyData();
-  }, [loadShopifyData]);
+
+    // Auto-sync whenever the user switches back to this browser tab from Shopify
+    const handleWindowFocus = () => {
+      syncShopifyOrders()
+        .then(() => handleSyncComplete())
+        .catch(() => {});
+    };
+
+    // Periodic auto-sync every 30 seconds
+    const interval = setInterval(() => {
+      syncShopifyOrders()
+        .then(() => handleSyncComplete())
+        .catch(() => {});
+    }, 30000);
+
+    window.addEventListener("focus", handleWindowFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [loadShopifyData, handleSyncComplete]);
 
   const handleRefreshAll = () => {
     setIsRefreshing(true);
