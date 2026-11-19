@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  shopifyId   String?  @unique
+  firstName   String?
+  lastName    String?
+  email       String?  @unique
+  phone       String?
+  orders      Order[]
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  shopifyId         String?     @unique
+  orderNumber       String
+  customerId        String?
+  customer          Customer?   @relation(fields: [customerId], references: [id])
+  financialStatus   String?
+  fulfillmentStatus String?
+  totalAmount       Decimal     @db.Decimal(12, 2)
+  currency          String
+  orderDate         DateTime
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([orderNumber])
+  @@index([orderDate])
+  @@index([financialStatus])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shopifyId   String?
+  productName String
+  quantity    Int
+  price       Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+}
+
+model WebhookLog {
+  id           String   @id @default(uuid())
+  webhookId    String?  @unique
+  topic        String
+  shopifyId    String?
+  status       String   // 'SUCCESS' | 'FAILED' | 'DUPLICATE'
+  errorMessage String?
+  payload      String?
+  processedAt  DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([topic])
+  @@index([status])
+}
