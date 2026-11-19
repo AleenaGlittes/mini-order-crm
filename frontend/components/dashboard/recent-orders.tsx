@@ -31,12 +31,13 @@ import {
 
 interface RecentOrdersProps {
   initialOrders?: Order[];
+  refreshKey?: number;
 }
 
 type FinancialStatusType = "Paid" | "Pending" | "Refunded";
 type FulfillmentStatusType = "Fulfilled" | "Unfulfilled" | "Partially Fulfilled";
 
-export function RecentOrders({ initialOrders }: RecentOrdersProps) {
+export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders || []);
   const [page, setPage] = useState(1);
   const [limit] = useState(8);
@@ -94,6 +95,7 @@ export function RecentOrders({ initialOrders }: RecentOrdersProps) {
     sortBy,
     sortOrder,
     refreshTrigger,
+    refreshKey,
   ]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

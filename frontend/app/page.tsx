@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [shopifyData, setShopifyData] = useState<ShopifyStatusResponse | null>(null);
+  const [ordersVersion, setOrdersVersion] = useState(0);
 
   const loadShopifyData = useCallback(() => {
     fetchShopifyStatus()
@@ -45,13 +46,18 @@ export default function DashboardPage() {
       });
   }, []);
 
+  const handleSyncComplete = useCallback(() => {
+    loadShopifyData();
+    setOrdersVersion((v) => v + 1);
+  }, [loadShopifyData]);
+
   useEffect(() => {
     loadShopifyData();
   }, [loadShopifyData]);
 
   const handleRefreshAll = () => {
     setIsRefreshing(true);
-    loadShopifyData();
+    handleSyncComplete();
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1200);
@@ -240,14 +246,14 @@ export default function DashboardPage() {
                     shopDomain={shopifyData?.shopDomain}
                     isLive={shopifyData?.isLive}
                     initialSyncTime="Just now"
-                    onSyncCompleted={loadShopifyData}
+                    onSyncCompleted={handleSyncComplete}
                   />
                 </div>
               </section>
 
               {/* 3. Bottom Row: Recent Orders Table with Status Badges */}
               <section id="orders" aria-label="Recent Orders Table">
-                <RecentOrders />
+                <RecentOrders refreshKey={ordersVersion} />
               </section>
             </>
           )}
@@ -256,7 +262,7 @@ export default function DashboardPage() {
           {activeTab === "orders" && (
             <div className="space-y-6">
               <StatsGrid liveStats={shopifyData?.stats} />
-              <RecentOrders />
+              <RecentOrders refreshKey={ordersVersion} />
             </div>
           )}
 
@@ -291,7 +297,7 @@ export default function DashboardPage() {
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false);
-          loadShopifyData();
+          handleSyncComplete();
         }}
       />
     </div>
