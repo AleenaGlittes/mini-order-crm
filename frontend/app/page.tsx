@@ -161,7 +161,7 @@ export default function DashboardPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
                   <Store className="h-4 w-4" />
                 </div>
-                <span className="font-bold text-sm">Shopify CRM</span>
+                <span className="font-bold text-sm">Mini CRM</span>
               </div>
               <Button
                 variant="ghost"

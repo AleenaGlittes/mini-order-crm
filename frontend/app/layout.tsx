@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shopify Order CRM",
-  description: "Real-time Shopify order synchronization and customer tracking CRM",
+  title: "Mini CRM",
+  description: "Real-time order synchronization and customer tracking CRM",
 };
 
 export default function RootLayout({

@@ -71,7 +71,7 @@ export function Sidebar({
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-bold tracking-tight text-foreground truncate">
-            Shopify CRM
+            Mini CRM
           </span>
           {/* <span className="text-[11px] font-mono text-muted-foreground truncate">
             mystore.myshopify.com
