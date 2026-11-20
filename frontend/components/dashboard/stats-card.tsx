@@ -8,7 +8,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { dashboardStats } from "@/lib/sample-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatItem {
   title: string;
@@ -19,6 +19,7 @@ interface StatItem {
 
 interface StatsGridProps {
   stats?: StatItem[];
+  isLoading?: boolean;
   liveStats?: {
     totalOrders: number;
     totalRevenue: number;
@@ -50,10 +51,31 @@ const statConfig = {
   },
 };
 
-export function StatsGrid({ stats, liveStats }: StatsGridProps) {
-  const displayStats: StatItem[] = React.useMemo(() => {
-    if (liveStats) {
-      return [
+export function StatsGrid({ stats, liveStats, isLoading }: StatsGridProps) {
+  if (isLoading || (!liveStats && !stats)) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card
+            key={i}
+            className="border border-border/80 bg-card p-5 shadow-xs"
+          >
+            <div className="flex items-start justify-between">
+              <div className="space-y-2.5 w-full pr-4">
+                <Skeleton className="h-3.5 w-24 rounded bg-muted/60" />
+                <Skeleton className="h-8 w-28 rounded bg-muted/80" />
+                <Skeleton className="h-3 w-36 rounded bg-muted/50" />
+              </div>
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0 bg-muted/60" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  const displayStats: StatItem[] = liveStats
+    ? [
         {
           title: "Total Orders",
           value: liveStats.totalOrders.toLocaleString(),
@@ -78,10 +100,8 @@ export function StatsGrid({ stats, liveStats }: StatsGridProps) {
           change: "+9.1%",
           description: "Successfully delivered",
         },
-      ];
-    }
-    return stats || dashboardStats;
-  }, [stats, liveStats]);
+      ]
+    : stats || [];
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {displayStats.map((stat) => {
@@ -115,25 +135,6 @@ export function StatsGrid({ stats, liveStats }: StatsGridProps) {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 pt-1 border-t border-border/50 text-xs">
-              <span
-                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ${
-                  isPositive
-                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                    : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
-                }`}
-              >
-                {isPositive ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                {stat.change}
-              </span>
-              <span className="text-muted-foreground text-[11px] truncate">
-                {stat.description}
-              </span>
-            </div>
           </Card>
         );
       })}

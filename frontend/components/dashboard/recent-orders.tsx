@@ -12,10 +12,12 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   PaymentStatusBadge,
   FulfillmentStatusBadge,
 } from "@/components/dashboard/order-status-badge";
+import { OrderDetailsSection } from "@/components/dashboard/order-details-section";
 import { fetchOrders, Order } from "@/lib/api";
 import {
   Search,
@@ -40,7 +42,8 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
   const [page, setPage] = useState(1);
   const [limit] = useState(8);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(8);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("All");
@@ -108,6 +111,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
 
   useEffect(() => {
     let ignore = false;
+    setIsLoading(true);
 
     fetchOrders({
       page,
@@ -129,6 +133,11 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
       })
       .catch((err) => {
         console.warn("Failed fetching orders:", err);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setIsLoading(false);
+        }
       });
 
     return () => {
@@ -171,6 +180,15 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
     }
   };
 
+  if (selectedOrder) {
+    return (
+      <OrderDetailsSection
+        order={selectedOrder}
+        onBack={() => setSelectedOrder(null)}
+      />
+    );
+  }
+
   return (
     <>
       <Card className="border border-border/80 bg-card shadow-xs">
@@ -184,9 +202,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                 {totalCount} total
               </span>
             </div>
-            <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Server-side paginated orders synchronized with Shopify & PostgreSQL
-            </CardDescription>
+         
           </div>
 
           <div className="flex items-center gap-2">
@@ -333,7 +349,39 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.length === 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i} className="hover:bg-transparent">
+                      <TableCell>
+                        <Skeleton className="h-5 w-16 rounded bg-muted/60" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-3.5 w-28 rounded bg-muted/70" />
+                          <Skeleton className="h-3 w-36 rounded bg-muted/40" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-3.5 w-20 rounded bg-muted/50" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-3.5 w-12 rounded bg-muted/50" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16 rounded bg-muted/70" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-20 rounded-full bg-muted/60" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-24 rounded-full bg-muted/60" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-6 w-14 rounded ml-auto bg-muted/50" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : orders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-32 text-center text-sm text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-1.5">
@@ -366,7 +414,14 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                       order.items?.reduce((s, i) => s + (i.quantity || 1), 0) || order.items?.length || 1;
 
                     return (
-                      <TableRow key={order.id} className="transition-colors hover:bg-muted/30">
+                      <TableRow
+                        key={order.id}
+                        className="transition-colors hover:bg-muted/40 cursor-pointer"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
                         <TableCell className="font-semibold text-foreground">
                           <span className="font-mono text-xs text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                             {order.orderNumber}
@@ -399,7 +454,11 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                           <Button
                             variant="ghost"
                             size="xs"
-                            onClick={() => setSelectedOrder(order)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrder(order);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
                             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                             title="View Order Details"
                           >
@@ -443,139 +502,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
             </div>
           </div>
         </CardContent>
-
-        {/* 3. Detailed Order Modal View */}
-        {selectedOrder && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto"
-            onClick={() => setSelectedOrder(null)}
-          >
-            <div
-              className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in fade-in-50 zoom-in-95"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-foreground">
-                      Order {selectedOrder.orderNumber}
-                    </h3>
-                    {selectedOrder.shopifyId && (
-                      <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                        Shopify #{selectedOrder.shopifyId}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Placed on {formatDate(selectedOrder.orderDate)}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setSelectedOrder(null)}
-                  className="h-7 w-7 p-0 rounded-full"
-                >
-                  ✕
-                </Button>
-              </div>
-
-              <div className="mt-4 space-y-4 text-xs">
-                {/* Customer and Summary Card */}
-                <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-3.5 border border-border/60">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Customer</span>
-                    <p className="font-semibold text-foreground text-xs mt-0.5">
-                      {selectedOrder.customer?.firstName || selectedOrder.customer?.lastName
-                        ? `${selectedOrder.customer.firstName || ""} ${selectedOrder.customer.lastName || ""}`.trim()
-                        : "Guest Customer"}
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">{selectedOrder.customer?.email || "No email"}</p>
-                    {selectedOrder.customer?.phone && (
-                      <p className="text-muted-foreground text-[11px]">{selectedOrder.customer.phone}</p>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Order Total</span>
-                    <p className="font-bold text-foreground text-sm mt-0.5">
-                      ₹{Number(selectedOrder.totalAmount).toLocaleString("en-IN")}
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">{selectedOrder.currency || "INR"}</p>
-                  </div>
-                </div>
-
-                {/* Status Badges */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px] mb-1">Financial Status</span>
-                    <PaymentStatusBadge status={selectedOrder.financialStatus as FinancialStatusType} />
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px] mb-1">Fulfillment Status</span>
-                    <FulfillmentStatusBadge status={selectedOrder.fulfillmentStatus as FulfillmentStatusType} />
-                  </div>
-                </div>
-
-                {/* Line Items Table */}
-                <div className="space-y-1.5 pt-1">
-                  <span className="font-semibold text-foreground text-xs uppercase tracking-wider text-muted-foreground/80">
-                    Purchased Line Items
-                  </span>
-                  <div className="rounded-lg border border-border/60 overflow-hidden">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-muted/40 text-[11px] text-muted-foreground border-b border-border/60">
-                        <tr>
-                          <th className="p-2">Item</th>
-                          <th className="p-2 text-center">Qty</th>
-                          <th className="p-2 text-right">Price</th>
-                          <th className="p-2 text-right">Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/60">
-                        {(selectedOrder.items && selectedOrder.items.length > 0
-                          ? selectedOrder.items
-                          : [{ productName: "Standard Order Line Item", quantity: 1, price: selectedOrder.totalAmount }]
-                        ).map((item, idx) => (
-                          <tr key={idx} className="hover:bg-muted/20">
-                            <td className="p-2 font-medium text-foreground">{item.productName}</td>
-                            <td className="p-2 text-center text-muted-foreground">{item.quantity}</td>
-                            <td className="p-2 text-right text-muted-foreground">
-                              ₹{Number(item.price).toLocaleString("en-IN")}
-                            </td>
-                            <td className="p-2 text-right font-semibold text-foreground">
-                              ₹{(Number(item.price) * (item.quantity || 1)).toLocaleString("en-IN")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions Footer */}
-              <div className="mt-6 flex justify-end gap-2 border-t border-border/60 pt-3">
-                <Button variant="outline" size="xs" onClick={() => setSelectedOrder(null)}>
-                  Close
-                </Button>
-                <Button
-                  size="xs"
-                  className="gap-1 bg-primary text-primary-foreground font-semibold"
-                  onClick={() => {
-                    const orderId = selectedOrder.shopifyId || selectedOrder.orderNumber.replace("#", "");
-                    window.open(`https://admin.shopify.com/store/orders/${orderId}`, "_blank");
-                  }}
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  View in Shopify Admin
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </Card>
-
-      {/* Order Details Slideover/Modal */}
     </>
   );
 }

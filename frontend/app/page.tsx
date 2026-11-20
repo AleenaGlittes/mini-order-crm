@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [shopifyData, setShopifyData] = useState<ShopifyStatusResponse | null>(null);
   const [ordersVersion, setOrdersVersion] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const loadShopifyData = useCallback(() => {
     fetchShopifyStatus()
@@ -41,6 +42,9 @@ export default function DashboardPage() {
       })
       .catch((err) => {
         console.warn("fetchShopifyStatus error:", err);
+      })
+      .finally(() => {
+        setIsInitialLoading(false);
       });
   }, []);
 
@@ -165,7 +169,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl capitalize">
                   {activeTab === "dashboard"
-                    ? "Dashboard Overview"
+                    ? "Dashboard"
                     : activeTab === "orders"
                     ? "Order Management"
                     : activeTab === "customers"
@@ -174,22 +178,9 @@ export default function DashboardPage() {
                     ? "Revenue & Sales Analytics"
                     : "Shopify Store Settings"}
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-                  Live Sync
-                </span>
+                
               </div>
-              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                {activeTab === "dashboard"
-                  ? "Track revenue, analyze order flow, and monitor Shopify store synchronization in real-time."
-                  : activeTab === "orders"
-                  ? "Review, search, and manage all synced orders with payment and fulfillment tracking."
-                  : activeTab === "customers"
-                  ? "View customer order counts, lifetime spend, and purchase frequency."
-                  : activeTab === "analytics"
-                  ? "Analyze monthly sales, revenue trajectory, and peak performance metrics."
-                  : "Manage API credentials, webhook listeners, and automatic sync preferences."}
-              </p>
+             
             </div>
 
             {/* Action buttons */}
@@ -225,7 +216,7 @@ export default function DashboardPage() {
             <>
               {/* 1. Four Statistic Cards */}
               <section aria-label="Key Performance Indicators">
-                <StatsGrid liveStats={shopifyData?.stats} />
+                <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
               </section>
 
               {/* 2. Middle Row: Revenue Chart (Left) + Shopify Connection Status (Right) */}
@@ -234,16 +225,9 @@ export default function DashboardPage() {
                 className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start"
               >
                 <div className="lg:col-span-8">
-                  <RevenueChart data={shopifyData?.stats?.monthlyRevenue} />
+                  <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
                 </div>
-                <div className="lg:col-span-4">
-                  <ShopifyStatusCard
-                    shopDomain={shopifyData?.shopDomain}
-                    isLive={shopifyData?.isLive}
-                    initialSyncTime="Just now"
-                    onSyncCompleted={handleSyncComplete}
-                  />
-                </div>
+              
               </section>
 
               {/* 3. Bottom Row: Recent Orders Table with Status Badges */}
@@ -256,7 +240,7 @@ export default function DashboardPage() {
           {/* VIEW: ORDERS */}
           {activeTab === "orders" && (
             <div className="space-y-6">
-              <StatsGrid liveStats={shopifyData?.stats} />
+              <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
               <RecentOrders refreshKey={ordersVersion} />
             </div>
           )}
@@ -271,9 +255,9 @@ export default function DashboardPage() {
           {/* VIEW: ANALYTICS */}
           {activeTab === "analytics" && (
             <div className="space-y-6">
-              <RevenueChart data={shopifyData?.stats?.monthlyRevenue} />
+              <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
               <section aria-label="Key Performance Indicators">
-                <StatsGrid liveStats={shopifyData?.stats} />
+                <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
               </section>
             </div>
           )}

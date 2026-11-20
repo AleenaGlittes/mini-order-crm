@@ -1,14 +1,15 @@
 import React from "react";
 import { Check, Clock, RotateCcw, PackageCheck, Layers } from "lucide-react";
-import { Order } from "@/lib/sample-data";
+export type PaymentStatusType = 'Paid' | 'Pending' | 'Refunded' | 'Partially Paid' | string;
+export type FulfillmentStatusType = 'Fulfilled' | 'Unfulfilled' | 'Partially Fulfilled' | 'Restocked' | string;
 
 export interface PaymentStatusBadgeProps {
-  status: Order["paymentStatus"];
+  status: PaymentStatusType;
   className?: string;
 }
 
 export interface FulfillmentStatusBadgeProps {
-  status: Order["fulfillmentStatus"];
+  status: FulfillmentStatusType;
   className?: string;
 }
 

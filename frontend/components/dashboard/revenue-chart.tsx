@@ -14,11 +14,17 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { revenueData } from "@/lib/sample-data";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, BarChart3, LineChart } from "lucide-react";
 
+interface RevenueItem {
+  month: string;
+  revenue: number;
+}
+
 interface RevenueChartProps {
-  data?: typeof revenueData;
+  data?: RevenueItem[];
+  isLoading?: boolean;
 }
 
 interface CustomTooltipProps {
@@ -50,12 +56,19 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 const emptySubscribe = () => () => {};
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({ data, isLoading }: RevenueChartProps) {
   const chartData = useMemo(() => {
-    if (data && data.length > 0 && data.some((d) => d.revenue > 0)) {
+    if (data && data.length > 0) {
       return data;
     }
-    return revenueData;
+    return [
+      { month: "Jun", revenue: 0 },
+      { month: "Jul", revenue: 0 },
+      { month: "Aug", revenue: 0 },
+      { month: "Sep", revenue: 0 },
+      { month: "Oct", revenue: 0 },
+      { month: "Nov", revenue: 0 },
+    ];
   }, [data]);
 
   const mounted = useSyncExternalStore(
@@ -69,13 +82,40 @@ export function RevenueChart({ data }: RevenueChartProps) {
     () => chartData.reduce((sum, item) => sum + item.revenue, 0),
     [chartData]
   );
-  const averageMonthly = Math.round(totalRevenue / chartData.length);
+  const averageMonthly = Math.round(totalRevenue / Math.max(1, chartData.length));
   const peakMonth = useMemo(() => {
     return chartData.reduce(
       (max, item) => (item.revenue > max.revenue ? item : max),
-      chartData[0]
+      chartData[0] || { month: "Nov", revenue: 0 }
     );
   }, [chartData]);
+
+  if (isLoading || !data) {
+    return (
+      <Card className="border border-border/80 bg-card shadow-xs">
+        <CardHeader className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-36 rounded bg-muted/60" />
+            <Skeleton className="h-3.5 w-56 rounded bg-muted/50" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-16 rounded bg-muted/60" />
+            <Skeleton className="h-8 w-16 rounded bg-muted/60" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="h-[280px] w-full flex items-end gap-6 px-4 pb-4">
+            {[35, 60, 45, 80, 50, 90].map((h, idx) => (
+              <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                <Skeleton className="w-full rounded-t-md bg-muted/60" style={{ height: `${h}%` }} />
+                <Skeleton className="h-3 w-8 rounded bg-muted/40" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border/80 bg-card shadow-xs">
@@ -85,13 +125,9 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <CardTitle className="text-lg font-semibold tracking-tight">
               Revenue Analytics
             </CardTitle>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#eb5e28]/10 px-2 py-0.5 text-xs font-medium text-[#eb5e28]">
-              <TrendingUp className="h-3 w-3" /> +18.2% vs previous
-            </span>
+            
           </div>
-          <CardDescription className="text-xs text-muted-foreground mt-0.5">
-            Track revenue growth and order sales performance across months
-          </CardDescription>
+        
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -121,7 +157,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               className="gap-1 text-xs"
             >
               <LineChart className="h-3.5 w-3.5" />
-              <span>Area</span>
+              {/* <span>Area</span> */}
             </Button>
             <Button
               type="button"
@@ -131,7 +167,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               className="gap-1 text-xs"
             >
               <BarChart3 className="h-3.5 w-3.5" />
-              <span>Bar</span>
+              {/* <span>Bar</span> */}
             </Button>
           </div>
         </div>

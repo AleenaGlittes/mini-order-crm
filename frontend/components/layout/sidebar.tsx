@@ -74,9 +74,9 @@ export function Sidebar({
           <span className="text-sm font-bold tracking-tight text-foreground truncate">
             Shopify CRM
           </span>
-          <span className="text-[11px] font-mono text-muted-foreground truncate">
+          {/* <span className="text-[11px] font-mono text-muted-foreground truncate">
             mystore.myshopify.com
-          </span>
+          </span> */}
         </div>
       </div>
 
@@ -128,22 +128,7 @@ export function Sidebar({
 
       {/* Fixed Footer: Shopify Connection & Admin Profile (always visible in viewport) */}
       <div className="shrink-0 p-3.5 border-t border-border/80 bg-card/60 backdrop-blur-xs space-y-3">
-        {/* Connection Widget */}
-        <div className="rounded-xl border border-primary/20 bg-primary/10 p-2.5 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 font-semibold text-primary">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
-              </span>
-              Shopify Connected
-            </span>
-            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <p className="mt-1 text-[11px] text-muted-foreground leading-snug truncate">
-            Sync active for {storeShort}.
-          </p>
-        </div>
+        
 
         {/* User Profile */}
         <div className="flex items-center gap-2.5 pt-0.5">

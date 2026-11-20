@@ -33,7 +33,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             type="search"
-            placeholder="Search orders, customers, or SKUs... (Ctrl+K)"
+            placeholder="Search orders, customers ..."
             className="h-9 w-full rounded-lg bg-muted/40 pl-8 text-xs border-border/80 focus-visible:bg-background"
           />
         </div>
@@ -50,15 +50,10 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <span className="font-semibold text-primary">
             Shopify: Connected
           </span>
-          <span className="text-muted-foreground hidden sm:inline">•</span>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline">Live Sync</span>
+         
         </div>
 
-        {/* Notifications */}
-        <Button variant="ghost" size="icon-sm" className="relative text-muted-foreground">
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
-        </Button>
+     
 
         {/* User Avatar */}
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-xs">
