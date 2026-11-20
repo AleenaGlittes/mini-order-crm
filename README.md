@@ -1,4 +1,4 @@
-# Shopify Order CRM & Analytics Platform
+# Shopify Order CRM
 
 A full-stack, enterprise-grade Shopify Order Management and CRM system built with **NestJS**, **Prisma 7**, **PostgreSQL**, and **Next.js 16 (React 19, Tailwind CSS)**.
 
