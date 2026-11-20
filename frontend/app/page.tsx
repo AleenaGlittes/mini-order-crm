@@ -6,12 +6,14 @@ import { Header } from "@/components/layout/header";
 import { StatsGrid } from "@/components/dashboard/stats-card";
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { RecentOrders } from "@/components/dashboard/recent-orders";
+import { RecentCustomersCard } from "@/components/dashboard/recent-customers-card";
+import { OrderDetailsSection } from "@/components/dashboard/order-details-section";
 import { ShopifyStatusCard } from "@/components/dashboard/shopify-status-card";
 import { CustomersView } from "@/components/dashboard/customers-view";
 import { SettingsView } from "@/components/dashboard/settings-view";
 import { CreateOrderDialog } from "@/components/dashboard/create-order-dialog";
 import { Button } from "@/components/ui/button";
-import { fetchShopifyStatus, syncShopifyOrders, ShopifyStatusResponse } from "@/lib/api";
+import { fetchShopifyStatus, syncShopifyOrders, ShopifyStatusResponse, Order } from "@/lib/api";
 import {
   RotateCw,
   Store,
@@ -32,6 +34,7 @@ export default function DashboardPage() {
   const [shopifyData, setShopifyData] = useState<ShopifyStatusResponse | null>(null);
   const [ordersVersion, setOrdersVersion] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
   const loadShopifyData = useCallback(() => {
     fetchShopifyStatus()
@@ -60,14 +63,14 @@ export default function DashboardPage() {
     const handleWindowFocus = () => {
       syncShopifyOrders()
         .then(() => handleSyncComplete())
-        .catch(() => {});
+        .catch(() => { });
     };
 
     // Periodic auto-sync every 30 seconds
     const interval = setInterval(() => {
       syncShopifyOrders()
         .then(() => handleSyncComplete())
-        .catch(() => {});
+        .catch(() => { });
     }, 30000);
 
     window.addEventListener("focus", handleWindowFocus);
@@ -90,19 +93,22 @@ export default function DashboardPage() {
     title: string;
     icon: React.ComponentType<{ className?: string }>;
   }> = [
-    { id: "dashboard", title: "Dashboard", icon: LayoutDashboard },
-    { id: "orders", title: "Orders", icon: ShoppingBag },
-    { id: "customers", title: "Customers", icon: Users },
-    { id: "analytics", title: "Analytics", icon: BarChart3 },
-    { id: "settings", title: "Shopify Settings", icon: Settings },
-  ];
+      { id: "dashboard", title: "Dashboard", icon: LayoutDashboard },
+      { id: "orders", title: "Orders", icon: ShoppingBag },
+      { id: "customers", title: "Customers", icon: Users },
+      { id: "analytics", title: "Analytics", icon: BarChart3 },
+      { id: "settings", title: "Shopify Settings", icon: Settings },
+    ];
 
   return (
-    <div className="flex min-h-screen bg-muted/20 font-sans text-foreground antialiased">
+    <div className="flex min-h-screen bg-card font-sans text-foreground antialiased">
       {/* Desktop Sidebar with Active Tab Controller */}
       <Sidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setViewingOrder(null);
+        }}
         shopDomain={shopifyData?.shopDomain}
       />
 
@@ -140,13 +146,13 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => {
                       setActiveTab(item.id);
+                      setViewingOrder(null);
                       setMobileMenuOpen(false);
                     }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${isActive
+                      ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -168,19 +174,21 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl capitalize">
-                  {activeTab === "dashboard"
-                    ? "Dashboard"
-                    : activeTab === "orders"
-                    ? "Order Management"
-                    : activeTab === "customers"
-                    ? "Customer Profiles"
-                    : activeTab === "analytics"
-                    ? "Revenue & Sales Analytics"
-                    : "Shopify Store Settings"}
+                  {viewingOrder
+                    ? `Order ${viewingOrder.orderNumber}`
+                    : activeTab === "dashboard"
+                      ? "Dashboard"
+                      : activeTab === "orders"
+                        ? "Order Management"
+                        : activeTab === "customers"
+                          ? "Customer Profiles"
+                          : activeTab === "analytics"
+                            ? "Revenue & Sales Analytics"
+                            : "Shopify Store Settings"}
                 </h1>
-                
+               
               </div>
-             
+         
             </div>
 
             {/* Action buttons */}
@@ -193,9 +201,8 @@ export default function DashboardPage() {
                 className="gap-1.5 text-xs border-border/80 hover:bg-muted"
               >
                 <RotateCw
-                  className={`h-3.5 w-3.5 ${
-                    isRefreshing ? "animate-spin text-primary" : ""
-                  }`}
+                  className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : ""
+                    }`}
                 />
                 <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
               </Button>
@@ -211,62 +218,79 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* VIEW: DASHBOARD */}
-          {activeTab === "dashboard" && (
+          {/* VIEW: ORDER DETAILS (Dedicated full view if selected from dashboard or orders) */}
+          {viewingOrder ? (
+            <OrderDetailsSection
+              order={viewingOrder}
+              onBack={() => setViewingOrder(null)}
+            />
+          ) : (
             <>
-              {/* 1. Four Statistic Cards */}
-              <section aria-label="Key Performance Indicators">
-                <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
-              </section>
+              {/* VIEW: DASHBOARD */}
+              {activeTab === "dashboard" && (
+                <>
+                  {/* 1. Four Statistic Cards */}
+                  <section aria-label="Key Performance Indicators">
+                    <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
+                  </section>
 
-              {/* 2. Middle Row: Revenue Chart (Left) + Shopify Connection Status (Right) */}
-              <section
-                aria-label="Analytics and Connection Status"
-                className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start"
-              >
-                <div className="lg:col-span-8">
-                  <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
+                  {/* 2. Middle Row: Revenue Chart (Left) + Recent Customers (Right) */}
+                  <section
+                    aria-label="Analytics and Recent Customers"
+                    className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-stretch"
+                  >
+                    <div className="lg:col-span-8">
+                      <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
+                    </div>
+                    <div className="lg:col-span-4">
+                      <RecentCustomersCard onViewAll={() => setActiveTab("customers")} />
+                    </div>
+                  </section>
+
+                  {/* 3. Bottom Row: Recent Orders Table with Status Badges */}
+                  <section id="orders" aria-label="Recent Orders Table">
+                    <RecentOrders
+                      refreshKey={ordersVersion}
+                      onSelectOrder={(order) => setViewingOrder(order)}
+                    />
+                  </section>
+                </>
+              )}
+
+              {/* VIEW: ORDERS (Only the table section, static cards removed) */}
+              {activeTab === "orders" && (
+                <div className="space-y-6">
+                  <RecentOrders
+                    refreshKey={ordersVersion}
+                    onSelectOrder={(order) => setViewingOrder(order)}
+                  />
                 </div>
-              
-              </section>
+              )}
 
-              {/* 3. Bottom Row: Recent Orders Table with Status Badges */}
-              <section id="orders" aria-label="Recent Orders Table">
-                <RecentOrders refreshKey={ordersVersion} />
-              </section>
+              {/* VIEW: CUSTOMERS */}
+              {activeTab === "customers" && (
+                <div className="space-y-6">
+                  <CustomersView />
+                </div>
+              )}
+
+              {/* VIEW: ANALYTICS */}
+              {activeTab === "analytics" && (
+                <div className="space-y-6">
+                  <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
+                  <section aria-label="Key Performance Indicators">
+                    <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
+                  </section>
+                </div>
+              )}
+
+              {/* VIEW: SETTINGS */}
+              {activeTab === "settings" && (
+                <div className="space-y-6">
+                  <SettingsView />
+                </div>
+              )}
             </>
-          )}
-
-          {/* VIEW: ORDERS */}
-          {activeTab === "orders" && (
-            <div className="space-y-6">
-              <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
-              <RecentOrders refreshKey={ordersVersion} />
-            </div>
-          )}
-
-          {/* VIEW: CUSTOMERS */}
-          {activeTab === "customers" && (
-            <div className="space-y-6">
-              <CustomersView />
-            </div>
-          )}
-
-          {/* VIEW: ANALYTICS */}
-          {activeTab === "analytics" && (
-            <div className="space-y-6">
-              <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
-              <section aria-label="Key Performance Indicators">
-                <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
-              </section>
-            </div>
-          )}
-
-          {/* VIEW: SETTINGS */}
-          {activeTab === "settings" && (
-            <div className="space-y-6">
-              <SettingsView />
-            </div>
           )}
         </main>
       </div>

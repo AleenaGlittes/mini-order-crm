@@ -447,3 +447,38 @@ function getFallbackOrders(params: QueryOrdersParams): OrdersResponse {
     },
   };
 }
+
+export interface ProductItem {
+  id: string;
+  title: string;
+  price: number;
+  variantId?: string;
+  category?: string;
+}
+
+export async function fetchProducts(): Promise<ProductItem[]> {
+  try {
+    const res = await fetch(`${API_BASE}/shopify/products`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.data && Array.isArray(data.data)) {
+        return data.data;
+      }
+    }
+  } catch (err) {
+    console.warn('fetchProducts error:', (err as Error).message);
+  }
+
+  return [
+    { id: 'prod_1', title: 'Classic Cotton Tee', price: 1299, category: 'Apparel' },
+    { id: 'prod_2', title: 'Premium Leather Wallet', price: 1899, category: 'Accessories' },
+    { id: 'prod_3', title: 'Minimalist Sneakers', price: 3499, category: 'Footwear' },
+    { id: 'prod_4', title: 'Wireless Earbuds Pro', price: 4999, category: 'Electronics' },
+    { id: 'prod_5', title: 'Organic Canvas Tote Bag', price: 799, category: 'Accessories' },
+    { id: 'prod_6', title: 'Water-Resistant Windbreaker', price: 2999, category: 'Apparel' },
+    { id: 'prod_7', title: 'Stainless Steel Water Bottle', price: 1199, category: 'Lifestyle' },
+    { id: 'prod_8', title: 'Smart Fitness Tracker Band', price: 3999, category: 'Electronics' },
+    { id: 'prod_9', title: 'Polarized Sunglasses Classic', price: 2199, category: 'Accessories' },
+    { id: 'prod_10', title: 'Merino Wool Knit Beanie', price: 999, category: 'Apparel' },
+  ];
+}

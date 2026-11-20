@@ -32,12 +32,21 @@ import {
 interface RecentOrdersProps {
   initialOrders?: Order[];
   refreshKey?: number;
+  onSelectOrder?: (order: Order) => void;
+  selectedOrder?: Order | null;
+  onBack?: () => void;
 }
 
 type FinancialStatusType = "Paid" | "Pending" | "Refunded";
 type FulfillmentStatusType = "Fulfilled" | "Unfulfilled" | "Partially Fulfilled";
 
-export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
+export function RecentOrders({
+  initialOrders,
+  refreshKey,
+  onSelectOrder,
+  selectedOrder: controlledSelectedOrder,
+  onBack: controlledOnBack,
+}: RecentOrdersProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders || []);
   const [page, setPage] = useState(1);
   const [limit] = useState(8);
@@ -54,7 +63,26 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [internalSelectedOrder, setInternalSelectedOrder] = useState<Order | null>(null);
+
+  const activeSelectedOrder =
+    controlledSelectedOrder !== undefined ? controlledSelectedOrder : internalSelectedOrder;
+
+  const handleOrderSelect = (order: Order) => {
+    if (onSelectOrder) {
+      onSelectOrder(order);
+    } else {
+      setInternalSelectedOrder(order);
+    }
+  };
+
+  const handleBack = () => {
+    if (controlledOnBack) {
+      controlledOnBack();
+    } else {
+      setInternalSelectedOrder(null);
+    }
+  };
 
   const handleExportCSV = () => {
     if (!orders || orders.length === 0) return;
@@ -180,11 +208,11 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
     }
   };
 
-  if (selectedOrder) {
+  if (activeSelectedOrder) {
     return (
       <OrderDetailsSection
-        order={selectedOrder}
-        onBack={() => setSelectedOrder(null)}
+        order={activeSelectedOrder}
+        onBack={handleBack}
       />
     );
   }
@@ -202,7 +230,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                 {totalCount} total
               </span>
             </div>
-         
+
           </div>
 
           <div className="flex items-center gap-2">
@@ -418,7 +446,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                         key={order.id}
                         className="transition-colors hover:bg-muted/40 cursor-pointer"
                         onClick={() => {
-                          setSelectedOrder(order);
+                          handleOrderSelect(order);
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
                       >
@@ -456,7 +484,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
                             size="xs"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedOrder(order);
+                              handleOrderSelect(order);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
                             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
