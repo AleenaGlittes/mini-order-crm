@@ -16,7 +16,6 @@ import {
   PaymentStatusBadge,
   FulfillmentStatusBadge,
 } from "@/components/dashboard/order-status-badge";
-import { CreateOrderDialog } from "@/components/dashboard/create-order-dialog";
 import { fetchOrders, Order } from "@/lib/api";
 import {
   Search,
@@ -24,8 +23,7 @@ import {
   Eye,
   ShoppingBag,
   ArrowUpDown,
-  Plus,
-  RotateCw,
+  Download,
   Calendar,
 } from "lucide-react";
 
@@ -54,7 +52,59 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) return;
+    const headers = [
+      "Order Number",
+      "Date",
+      "Customer Name",
+      "Email",
+      "Items Count",
+      "Total Amount",
+      "Currency",
+      "Financial Status",
+      "Fulfillment Status",
+    ];
+    const rows = orders.map((o) => {
+      const customerName =
+        o.customer?.firstName || o.customer?.lastName
+          ? `${o.customer.firstName || ""} ${o.customer.lastName || ""}`.trim()
+          : "Guest Customer";
+      const itemCount =
+        o.items?.reduce((s, i) => s + (i.quantity || 1), 0) || o.items?.length || 1;
+      return [
+        o.orderNumber,
+        new Date(o.orderDate).toLocaleDateString(),
+        customerName,
+        o.customer?.email || "",
+        itemCount,
+        o.totalAmount,
+        o.currency || "INR",
+        o.financialStatus,
+        o.fulfillmentStatus,
+      ];
+    });
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [
+        headers.join(","),
+        ...rows.map((r) =>
+          r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")
+        ),
+      ].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `shopify_orders_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -139,23 +189,16 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
             </CardDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setIsCreateOpen(true)}
-              className="gap-1.5 bg-primary text-primary-foreground font-semibold text-xs h-8"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Create Order</span>
-            </Button>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setRefreshTrigger((prev) => prev + 1)}
-              className="gap-1 text-xs h-8 border-border/80"
-              title="Refresh order records"
+              onClick={handleExportCSV}
+              className="gap-1.5 text-xs h-8 border-border/80 text-muted-foreground hover:text-foreground"
+              title="Download orders as CSV spreadsheet"
             >
-              <RotateCw className="h-3 w-3" />
+              <Download className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
             </Button>
           </div>
         </CardHeader>
@@ -532,12 +575,7 @@ export function RecentOrders({ initialOrders, refreshKey }: RecentOrdersProps) {
         )}
       </Card>
 
-      {/* 5. Create Order Form Modal */}
-      <CreateOrderDialog
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onOrderCreated={() => setRefreshTrigger((prev) => prev + 1)}
-      />
+      {/* Order Details Slideover/Modal */}
     </>
   );
 }

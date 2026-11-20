@@ -13,9 +13,7 @@ import { CreateOrderDialog } from "@/components/dashboard/create-order-dialog";
 import { Button } from "@/components/ui/button";
 import { fetchShopifyStatus, syncShopifyOrders, ShopifyStatusResponse } from "@/lib/api";
 import {
-  Download,
   RotateCw,
-  ExternalLink,
   Store,
   X,
   LayoutDashboard,
@@ -194,14 +192,14 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Quick action buttons */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRefreshAll}
                 disabled={isRefreshing}
-                className="gap-1.5 text-xs border-border/80"
+                className="gap-1.5 text-xs border-border/80 hover:bg-muted"
               >
                 <RotateCw
                   className={`h-3.5 w-3.5 ${
@@ -214,33 +212,10 @@ export default function DashboardPage() {
               <Button
                 size="sm"
                 onClick={() => setIsCreateOpen(true)}
-                className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>New Order</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs border-border/80"
-                onClick={() => {
-                  alert("Exporting recent order records to CSV...");
-                }}
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span>Export CSV</span>
-              </Button>
-
-              <Button
-                size="sm"
-                className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                onClick={() => {
-                  window.open("https://admin.shopify.com", "_blank");
-                }}
-              >
-                <span>Shopify Admin</span>
-                <ExternalLink className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
