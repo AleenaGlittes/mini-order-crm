@@ -128,3 +128,31 @@
     @apply font-sans;
   }
 }
+
+/* Custom sleek scrollbars & no-scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #ccc5b9;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #eb5e28;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc5b9 transparent;
+}

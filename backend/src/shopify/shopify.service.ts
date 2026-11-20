@@ -815,4 +815,42 @@ export class ShopifyService {
       },
     ];
   }
+
+  /**
+   * Fetch products from Shopify Admin API (or return curated catalog fallback)
+   */
+  async getProducts() {
+    try {
+      const data = await this.requestShopify<{ products: any[] }>(
+        'products.json?limit=50&fields=id,title,variants,vendor,product_type',
+      );
+      if (data?.products && data.products.length > 0) {
+        return data.products.map((p) => {
+          const firstVariant = p.variants?.[0];
+          return {
+            id: String(p.id),
+            title: p.title,
+            price: firstVariant?.price ? parseFloat(firstVariant.price) : 999,
+            variantId: firstVariant?.id ? String(firstVariant.id) : undefined,
+            category: p.product_type || p.vendor || 'General',
+          };
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Could not fetch products from Shopify: ${(err as Error).message}`);
+    }
+
+    return [
+      { id: 'prod_1', title: 'Classic Cotton Tee', price: 1299, category: 'Apparel' },
+      { id: 'prod_2', title: 'Premium Leather Wallet', price: 1899, category: 'Accessories' },
+      { id: 'prod_3', title: 'Minimalist Sneakers', price: 3499, category: 'Footwear' },
+      { id: 'prod_4', title: 'Wireless Earbuds Pro', price: 4999, category: 'Electronics' },
+      { id: 'prod_5', title: 'Organic Canvas Tote Bag', price: 799, category: 'Accessories' },
+      { id: 'prod_6', title: 'Water-Resistant Windbreaker', price: 2999, category: 'Apparel' },
+      { id: 'prod_7', title: 'Stainless Steel Water Bottle', price: 1199, category: 'Lifestyle' },
+      { id: 'prod_8', title: 'Smart Fitness Tracker Band', price: 3999, category: 'Electronics' },
+      { id: 'prod_9', title: 'Polarized Sunglasses Classic', price: 2199, category: 'Accessories' },
+      { id: 'prod_10', title: 'Merino Wool Knit Beanie', price: 999, category: 'Apparel' },
+    ];
+  }
 }

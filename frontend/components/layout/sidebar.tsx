@@ -5,26 +5,37 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Users,
-  BarChart3,
-  Settings,
   Store,
   CheckCircle2,
+  LogOut,
 } from "lucide-react";
 
-export type NavTab = "dashboard" | "orders" | "customers" | "analytics" | "settings";
+export type NavTab = "dashboard" | "orders" | "customers";
 
 interface SidebarProps {
   activeTab?: NavTab;
   onTabChange?: (tab: NavTab) => void;
   shopDomain?: string;
+  user?: { name: string; email: string } | null;
+  onLogout?: () => void;
 }
 
 export function Sidebar({
   activeTab = "dashboard",
   onTabChange,
-  shopDomain = "aura-bu8xtypb.myshopify.com",
+  shopDomain = "mystore.myshopify.com",
+  user,
+  onLogout,
 }: SidebarProps) {
   const storeShort = shopDomain.replace(".myshopify.com", "");
+  const userInitials =
+    user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "SA";
   const navItems: Array<{
     id: NavTab;
     title: string;
@@ -48,18 +59,6 @@ export function Sidebar({
       title: "Customers",
       icon: Users,
       badge: "8",
-    },
-    {
-      id: "analytics",
-      title: "Analytics",
-      icon: BarChart3,
-      badge: null,
-    },
-    {
-      id: "settings",
-      title: "Shopify Settings",
-      icon: Settings,
-      badge: null,
     },
   ];
 
@@ -131,16 +130,31 @@ export function Sidebar({
         
 
         {/* User Profile */}
-        <div className="flex items-center gap-2.5 pt-0.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted font-bold text-[11px] text-foreground ring-1 ring-border">
-            SA
+        <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[11px] ring-1 ring-primary/20">
+              {userInitials}
+            </div>
+            <div className="flex flex-col min-w-0 text-xs leading-none">
+              <span className="font-semibold text-foreground truncate">
+                {user?.name || "Store Admin"}
+              </span>
+              <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                {user?.email || "admin@mystore.com"}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0 text-xs leading-none">
-            <span className="font-semibold text-foreground truncate">Store Admin</span>
-            <span className="text-[11px] text-muted-foreground truncate mt-0.5">
-              admin@{storeShort}.com
-            </span>
-          </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
     </aside>

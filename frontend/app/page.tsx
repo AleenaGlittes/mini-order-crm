@@ -10,10 +10,18 @@ import { RecentCustomersCard } from "@/components/dashboard/recent-customers-car
 import { OrderDetailsSection } from "@/components/dashboard/order-details-section";
 import { ShopifyStatusCard } from "@/components/dashboard/shopify-status-card";
 import { CustomersView } from "@/components/dashboard/customers-view";
-import { SettingsView } from "@/components/dashboard/settings-view";
-import { CreateOrderDialog } from "@/components/dashboard/create-order-dialog";
+import { CreateOrderSection } from "@/components/dashboard/create-order-section";
+import { LoginView } from "@/components/auth/login-view";
 import { Button } from "@/components/ui/button";
-import { fetchShopifyStatus, syncShopifyOrders, ShopifyStatusResponse, Order } from "@/lib/api";
+import {
+  fetchShopifyStatus,
+  syncShopifyOrders,
+  ShopifyStatusResponse,
+  Order,
+  getStoredAuth,
+  logoutUser,
+  UserSession,
+} from "@/lib/api";
 import {
   RotateCw,
   Store,
@@ -21,20 +29,35 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Users,
-  BarChart3,
-  Settings,
   Plus,
+  LogOut,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [shopifyData, setShopifyData] = useState<ShopifyStatusResponse | null>(null);
   const [ordersVersion, setOrdersVersion] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  useEffect(() => {
+    const auth = getStoredAuth();
+    if (auth) {
+      setCurrentUser(auth);
+    }
+    setIsAuthChecking(false);
+  }, []);
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+  };
 
   const loadShopifyData = useCallback(() => {
     fetchShopifyStatus()
@@ -96,9 +119,19 @@ export default function DashboardPage() {
       { id: "dashboard", title: "Dashboard", icon: LayoutDashboard },
       { id: "orders", title: "Orders", icon: ShoppingBag },
       { id: "customers", title: "Customers", icon: Users },
-      { id: "analytics", title: "Analytics", icon: BarChart3 },
-      { id: "settings", title: "Shopify Settings", icon: Settings },
     ];
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#fffcf2]">
+        <RotateCw className="h-8 w-8 animate-spin text-[#eb5e28]" />
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <LoginView onLoginSuccess={(session) => setCurrentUser(session)} />;
+  }
 
   return (
     <div className="flex min-h-screen bg-card font-sans text-foreground antialiased">
@@ -108,8 +141,11 @@ export default function DashboardPage() {
         onTabChange={(tab) => {
           setActiveTab(tab);
           setViewingOrder(null);
+          setIsCreatingOrder(false);
         }}
         shopDomain={shopifyData?.shopDomain}
+        user={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Mobile Drawer Navigation */}
@@ -147,6 +183,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       setActiveTab(item.id);
                       setViewingOrder(null);
+                      setIsCreatingOrder(false);
                       setMobileMenuOpen(false);
                     }}
                     className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors ${isActive
@@ -160,101 +197,119 @@ export default function DashboardPage() {
                 );
               })}
             </nav>
+
+            {/* Mobile Drawer Footer: User Profile & Sign Out */}
+            <div className="mt-auto pt-4 border-t border-border/80 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[11px] ring-1 ring-primary/20">
+                  {currentUser?.name?.[0] || "A"}
+                </div>
+                <div className="flex flex-col min-w-0 text-xs">
+                  <span className="font-semibold text-foreground truncate">
+                    {currentUser?.name || "Store Admin"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {currentUser?.email || "admin@mystore.com"}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
+        <Header
+          onMobileMenuToggle={() => setMobileMenuOpen(true)}
+          user={currentUser}
+        />
 
         <main className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {/* Dashboard Header Bar */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
+          {/* Dashboard Header Bar (Shown on main views) */}
+          {!isCreatingOrder && !viewingOrder && (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl capitalize">
-                  {viewingOrder
-                    ? `Order ${viewingOrder.orderNumber}`
-                    : activeTab === "dashboard"
-                      ? "Dashboard"
-                      : activeTab === "orders"
-                        ? "Order Management"
-                        : activeTab === "customers"
-                          ? "Customer Profiles"
-                          : activeTab === "analytics"
-                            ? "Revenue & Sales Analytics"
-                            : "Shopify Store Settings"}
+                  {activeTab === "dashboard"
+                    ? "Dashboard"
+                    : activeTab === "orders"
+                      ? "Order Management"
+                      : "Customer Profiles"}
                 </h1>
-               
               </div>
-         
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshAll}
+                  disabled={isRefreshing}
+                  className="gap-1.5 text-xs border-border/80 hover:bg-muted"
+                >
+                  <RotateCw
+                    className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : ""
+                      }`}
+                  />
+                  <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setIsCreatingOrder(true);
+                    setViewingOrder(null);
+                  }}
+                  className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Order</span>
+                </Button>
+              </div>
             </div>
+          )}
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshAll}
-                disabled={isRefreshing}
-                className="gap-1.5 text-xs border-border/80 hover:bg-muted"
-              >
-                <RotateCw
-                  className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : ""
-                    }`}
-                />
-                <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => setIsCreateOpen(true)}
-                className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Order</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* VIEW: ORDER DETAILS (Dedicated full view if selected from dashboard or orders) */}
-          {viewingOrder ? (
+          {/* VIEW: CREATE ORDER (Dedicated full screen experience) */}
+          {isCreatingOrder ? (
+            <CreateOrderSection
+              onBack={() => setIsCreatingOrder(false)}
+              onOrderCreated={() => {
+                setIsCreatingOrder(false);
+                handleSyncComplete();
+              }}
+            />
+          ) : viewingOrder ? (
             <OrderDetailsSection
               order={viewingOrder}
               onBack={() => setViewingOrder(null)}
             />
           ) : (
             <>
-              {/* VIEW: DASHBOARD */}
+              {/* VIEW: DASHBOARD - Focused Order CRM Layout */}
               {activeTab === "dashboard" && (
-                <>
-                  {/* 1. Four Statistic Cards */}
+                <div className="space-y-6">
+                  {/* 1. Four Statistic Performance Cards */}
                   <section aria-label="Key Performance Indicators">
                     <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
                   </section>
 
-                  {/* 2. Middle Row: Revenue Chart (Left) + Recent Customers (Right) */}
-                  <section
-                    aria-label="Analytics and Recent Customers"
-                    className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-stretch"
-                  >
-                    <div className="lg:col-span-8">
-                      <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
-                    </div>
-                    <div className="lg:col-span-4">
-                      <RecentCustomersCard onViewAll={() => setActiveTab("customers")} />
-                    </div>
-                  </section>
-
-                  {/* 3. Bottom Row: Recent Orders Table with Status Badges */}
+                  {/* 2. Primary Showcase: Recent Orders Table (Given Full Dashboard Space) */}
                   <section id="orders" aria-label="Recent Orders Table">
                     <RecentOrders
                       refreshKey={ordersVersion}
                       onSelectOrder={(order) => setViewingOrder(order)}
                     />
                   </section>
-                </>
+                </div>
               )}
 
               {/* VIEW: ORDERS (Only the table section, static cards removed) */}
@@ -273,36 +328,10 @@ export default function DashboardPage() {
                   <CustomersView />
                 </div>
               )}
-
-              {/* VIEW: ANALYTICS */}
-              {activeTab === "analytics" && (
-                <div className="space-y-6">
-                  <RevenueChart data={shopifyData?.stats?.monthlyRevenue} isLoading={isInitialLoading} />
-                  <section aria-label="Key Performance Indicators">
-                    <StatsGrid liveStats={shopifyData?.stats} isLoading={isInitialLoading} />
-                  </section>
-                </div>
-              )}
-
-              {/* VIEW: SETTINGS */}
-              {activeTab === "settings" && (
-                <div className="space-y-6">
-                  <SettingsView />
-                </div>
-              )}
             </>
           )}
         </main>
       </div>
-
-      {/* Global Order Creation Dialog */}
-      <CreateOrderDialog
-        isOpen={isCreateOpen}
-        onClose={() => {
-          setIsCreateOpen(false);
-          handleSyncComplete();
-        }}
-      />
     </div>
   );
 }

@@ -68,6 +68,16 @@ export class ShopifyController {
   }
 
   /**
+   * GET /shopify/products
+   * Purpose: Retrieve product catalog for order creation
+   */
+  @Get('products')
+  async getProducts() {
+    const products = await this.shopifyService.getProducts();
+    return { success: true, data: products };
+  }
+
+  /**
    * DELETE /shopify/mock-orders
    * Purpose: Purge initial dummy/mock sample orders from the database
    */

@@ -51,6 +51,70 @@ export interface QueryOrdersParams {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+export interface UserSession {
+  id: string;
+  name: string;
+  email: string;
+  accessToken: string;
+}
+
+export function getStoredAuth(): UserSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('shopify_crm_auth');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAuth(session: UserSession | null) {
+  if (typeof window === 'undefined') return;
+  if (session) {
+    localStorage.setItem('shopify_crm_auth', JSON.stringify(session));
+  } else {
+    localStorage.removeItem('shopify_crm_auth');
+  }
+}
+
+export async function loginUser(email: string, password: string): Promise<UserSession> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || 'Invalid email or password');
+  }
+
+  const session: UserSession = {
+    id: data.user?.id || 'admin_user',
+    name: data.user?.name || 'Store Admin',
+    email: data.user?.email || email,
+    accessToken: data.accessToken,
+  };
+
+  setStoredAuth(session);
+  return session;
+}
+
+export function logoutUser() {
+  setStoredAuth(null);
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const auth = getStoredAuth();
+  if (auth?.accessToken) {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${auth.accessToken}`,
+    };
+  }
+  return { 'Content-Type': 'application/json' };
+}
+
 export async function fetchOrders(params: QueryOrdersParams = {}): Promise<OrdersResponse> {
   const query = new URLSearchParams();
   if (params.page) query.set('page', String(params.page));

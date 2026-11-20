@@ -3,7 +3,6 @@
 import React from "react";
 import {
   Search,
-  Bell,
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,20 @@ import { Input } from "@/components/ui/input";
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
+  user?: { name: string; email: string } | null;
+  onLogout?: () => void;
 }
 
-export function Header({ onMobileMenuToggle }: HeaderProps) {
+export function Header({ onMobileMenuToggle, user, onLogout }: HeaderProps) {
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "SA";
+
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border/80 bg-background/95 px-4 sm:px-6 backdrop-blur-md">
       {/* Left: Mobile hamburger & Search */}
@@ -50,14 +60,16 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <span className="font-semibold text-primary">
             Shopify: Connected
           </span>
-         
         </div>
 
-     
-
-        {/* User Avatar */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-xs">
-          AV
+        {/* User Info & Avatar */}
+        <div className="flex items-center gap-2 pl-1 border-l border-border/60">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shadow-xs"
+            title={user?.email ? `${user.name} (${user.email})` : "Store Admin"}
+          >
+            {initials}
+          </div>
         </div>
       </div>
     </header>

@@ -349,10 +349,10 @@ export function OrderDetailsSection({ order, onBack }: OrderDetailsSectionProps)
             <CardContent className="p-4 space-y-3 text-xs">
               <div>
                 <span className="text-[11px] text-muted-foreground block">
-                  Connected Store
+                  Connected Channel
                 </span>
                 <span className="font-mono text-xs text-foreground font-medium">
-                  mini-store-ujyu48ja.myshopify.com
+                  Shopify Online Store
                 </span>
               </div>
 
